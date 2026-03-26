@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>הזמנת ארוחת חג</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --warm0:  #FFFBF5;
+  --warm1:  #FEF3C7;
+  --warm2:  #FDE68A;
+  --gold:   #D97706;
+  --gold2:  #B45309;
+  --ink:    #1C1917;
+  --ink2:   #44403C;
+  --muted:  #78716C;
+  --border: #E7E5E4;
+  --white:  #FFFFFF;
+  --green:  #15803D;
+  --green2: #166534;
+  --green-bg: #DCFCE7;
+  --red:    #B91C1C;
+  --shadow: 0 2px 12px rgba(28,25,23,0.08);
+  --r:      16px;
+}
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+body {
+  font-family:'Heebo',sans-serif;
+  background: var(--warm0);
+  background-image:
+    radial-gradient(ellipse at top, #FEF9EE 0%, transparent 60%),
+    radial-gradient(ellipse at bottom right, #FEF3C7 0%, transparent 50%);
+  min-height: 100vh;
+  color: var(--ink);
+  padding: 0 0 80px;
+}
+
+/* ── Hero header ── */
+.hero {
+  background: linear-gradient(135deg, var(--ink) 0%, #292524 100%);
+  padding: 32px 24px 40px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content:'';
+  position:absolute; inset:0;
+  background: radial-gradient(ellipse at 50% 120%, rgba(217,119,6,0.25) 0%, transparent 65%);
+}
+.hero-badge {
+  display:inline-block;
+  border: 1px solid rgba(217,119,6,0.5);
+  color: var(--warm2);
+  font-size:12px; font-weight:700;
+  letter-spacing:2px; text-transform:uppercase;
+  padding:5px 16px; border-radius:20px;
+  margin-bottom:14px;
+  position:relative;
+}
+.hero h1 {
+  font-size: clamp(24px,7vw,38px);
+  font-weight:900; color:white;
+  line-height:1.15; position:relative;
+  margin-bottom:8px;
+}
+.hero-sub {
+  font-size:14px; color:rgba(255,255,255,0.6);
+  position:relative;
+}
+.deadline-pill {
+  display:inline-flex; align-items:center; gap:6px;
+  margin-top:14px;
+  background: rgba(217,119,6,0.18);
+  border: 1px solid rgba(217,119,6,0.35);
+  border-radius:20px; padding:6px 16px;
+  font-size:13px; font-weight:600;
+  color: var(--warm2);
+  position:relative;
+}
+.deadline-dot {
+  width:7px;height:7px;
+  background:var(--gold);
+  border-radius:50%;
+  animation:blink 1.5s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── Content ── */
+.wrap { max-width:600px; margin:0 auto; padding:24px 16px; }
+
+/* ── Cards ── */
+.card {
+  background:var(--white);
+  border-radius:var(--r);
+  border:1px solid var(--border);
+  padding:22px;
+  margin-bottom:16px;
+  box-shadow:var(--shadow);
+  animation: rise 0.45s ease both;
+}
+.card:nth-child(1){animation-delay:.05s}
+.card:nth-child(2){animation-delay:.1s}
+.card:nth-child(3){animation-delay:.15s}
+.card:nth-child(4){animation-delay:.2s}
+
+@keyframes rise {
+  from{opacity:0;transform:translateY(14px)}
+  to  {opacity:1;transform:translateY(0)}
+}
+
+.card-head {
+  display:flex; align-items:center; gap:10px;
+  font-size:15px; font-weight:700; color:var(--ink);
+  margin-bottom:16px; padding-bottom:12px;
+  border-bottom:1px solid var(--border);
+}
+.card-icon {
+  width:34px;height:34px;border-radius:9px;
+  background:var(--warm1);
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px; flex-shrink:0;
+}
+
+/* ── Form fields ── */
+.field { margin-bottom:14px; }
+.field label { display:block; font-size:13px; font-weight:600; color:var(--ink2); margin-bottom:5px; }
+.field label .req { color:var(--gold); }
+.field input[type=text],
+.field input[type=number],
+.field textarea {
+  width:100%; padding:11px 14px;
+  border:1.5px solid var(--border); border-radius:10px;
+  font-family:'Heebo',sans-serif; font-size:14px; color:var(--ink);
+  background:#FDFAF5; outline:none; direction:rtl;
+  transition:border-color .2s, box-shadow .2s;
+}
+.field input:focus, .field textarea:focus {
+  border-color:var(--gold); background:white;
+  box-shadow:0 0 0 3px rgba(217,119,6,0.1);
+}
+.field textarea { resize:vertical; min-height:72px; }
+.row2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media(max-width:420px){.row2{grid-template-columns:1fr}}
+
+/* ── Menu item rows ── */
+.menu-item {
+  display:flex; align-items:center;
+  justify-content:space-between;
+  padding:10px 13px;
+  border-radius:10px; margin-bottom:7px;
+  border:1.5px solid transparent;
+  background:#FDFAF5;
+  transition:background .15s, border-color .15s;
+  cursor:default;
+}
+.menu-item.has-qty {
+  background:var(--warm1);
+  border-color: var(--warm2);
+}
+.item-info { flex:1; min-width:0; }
+.item-name { font-size:14px; font-weight:500; }
+.item-price { font-size:12px; color:var(--muted); margin-top:1px; }
+
+.qty-ctl { display:flex; align-items:center; gap:7px; flex-shrink:0; }
+.q-btn {
+  width:30px;height:30px; border-radius:8px;
+  border:1.5px solid var(--border); background:white;
+  font-size:17px; font-weight:700; line-height:1;
+  cursor:pointer; display:flex;align-items:center;justify-content:center;
+  transition:all .15s; padding:0; color:var(--ink2);
+}
+.q-btn:hover { border-color:var(--gold); color:var(--gold); }
+.q-btn:active { transform:scale(.9); }
+.q-num { min-width:26px; text-align:center; font-size:15px; font-weight:700; }
+
+/* ── Payment method ── */
+.payment-options { display:flex; gap:10px; margin-bottom:4px; }
+.pay-opt {
+  flex:1; padding:13px 10px;
+  border:2px solid var(--border); border-radius:12px;
+  background:#FDFAF5; cursor:pointer;
+  text-align:center; transition:all .2s;
+  font-family:'Heebo',sans-serif;
+}
+.pay-opt:hover { border-color:var(--gold); }
+.pay-opt.selected { border-color:var(--gold); background:var(--warm1); }
+.pay-opt .pay-icon { font-size:22px; margin-bottom:5px; }
+.pay-opt .pay-label { font-size:13px; font-weight:700; color:var(--ink); }
+.pay-opt .pay-sub   { font-size:11px; color:var(--muted); margin-top:2px; }
+.account-field { display:none; margin-top:10px; animation:rise .25s ease both; }
+
+/* ── Running total ── */
+.total-bar {
+  background: linear-gradient(135deg, var(--ink) 0%, #292524 100%);
+  border-radius:var(--r);
+  padding:18px 22px;
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:16px;
+  box-shadow:0 4px 20px rgba(28,25,23,0.2);
+}
+.total-label { font-size:14px; font-weight:600; color:rgba(255,255,255,0.7); }
+.total-amount { font-size:28px; font-weight:900; color:var(--warm2); }
+
+/* ── Submit ── */
+.submit-btn {
+  width:100%; padding:15px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 100%);
+  color:white; border:none; border-radius:12px;
+  font-family:'Heebo',sans-serif; font-size:16px; font-weight:700;
+  cursor:pointer; transition:all .2s;
+  box-shadow:0 4px 16px rgba(217,119,6,0.35);
+  letter-spacing:.3px;
+}
+.submit-btn:hover { transform:translateY(-1px); box-shadow:0 6px 24px rgba(217,119,6,0.45); }
+.submit-btn:active { transform:scale(.98); }
+.submit-btn:disabled { background:#ccc; box-shadow:none; cursor:not-allowed; transform:none; }
+
+/* ── Success ── */
+#successScreen {
+  display:none; text-align:center; padding:48px 24px;
+  animation:rise .5s ease both;
+}
+#successScreen.show { display:block; }
+.success-ring {
+  width:80px;height:80px; margin:0 auto 20px;
+  border-radius:50%;
+  background:linear-gradient(135deg,var(--green),#22c55e);
+  display:flex;align-items:center;justify-content:center;
+  font-size:38px;
+  box-shadow:0 8px 28px rgba(21,128,61,0.35);
+}
+#successScreen h2 { font-size:26px;font-weight:900;margin-bottom:8px; }
+#successScreen p  { font-size:14px;color:var(--muted);line-height:1.8; }
+
+/* ── Error state ── */
+.expired-msg {
+  background:var(--ink); color:white;
+  border-radius:var(--r); padding:32px 24px;
+  text-align:center; margin-top:24px;
+}
+.expired-msg h2 { font-size:22px;font-weight:900;margin-bottom:8px; }
+.expired-msg p  { font-size:14px;color:rgba(255,255,255,0.6); }
+
+/* ── Spinner ── */
+.spinner {
+  display:none; width:20px;height:20px;
+  border:2px solid rgba(255,255,255,0.4);
+  border-top-color:white; border-radius:50%;
+  animation:spin .7s linear infinite;
+  margin:0 auto;
+}
+.spinner.show { display:inline-block; }
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge" id="heroBadge">הזמנת ארוחת חג</div>
+  <h1 id="heroTitle">טוען...</h1>
+  <p class="hero-sub" id="heroSub">מלא את הפרטים ושלח את הזמנתך</p>
+  <div class="deadline-pill" id="deadlinePill" style="display:none">
+    <span class="deadline-dot"></span>
+    <span id="deadlineText"></span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- Error / expired -->
+  <div id="expiredMsg" class="expired-msg" style="display:none">
+    <h2>⏰ מועד ההזמנה עבר</h2>
+    <p>לא ניתן להגיש הזמנות לאחר המועד האחרון.<br>לפרטים פנה/י לאחראית.</p>
+  </div>
+
+  <div id="formWrap">
+
+    <!-- Personal -->
+    <div class="card">
+      <div class="card-head"><div class="card-icon">👤</div>פרטים אישיים</div>
+      <div class="row2">
+        <div class="field">
+          <label>שם מלא <span class="req">*</span></label>
+          <input type="text" id="fullName" placeholder="ישראל ישראלי">
+        </div>
+        <div class="field">
+          <label>מספר נפשות</label>
+          <input type="number" id="numPeople" min="1" max="20" value="1">
+        </div>
+      </div>
+    </div>
+
+    <!-- Menu categories — built dynamically -->
+    <div id="menuWrap"></div>
+
+    <!-- Running total -->
+    <div class="total-bar">
+      <div class="total-label">סה"כ הזמנה</div>
+      <div class="total-amount" id="totalDisplay">₪0</div>
+    </div>
+
+    <!-- Payment method -->
+    <div class="card">
+      <div class="card-head"><div class="card-icon">💳</div>אופן תשלום</div>
+      <div class="payment-options">
+        <button class="pay-opt" id="payCard" onclick="selectPayment('card')">
+          <div class="pay-icon">💳</div>
+          <div class="pay-label">כרטיס אשראי</div>
+          <div class="pay-sub">תשלום במעמד האיסוף</div>
+        </button>
+        <button class="pay-opt" id="payAccount" onclick="selectPayment('account')">
+          <div class="pay-icon">🏦</div>
+          <div class="pay-label">חיוב תקציב</div>
+          <div class="pay-sub">חיוב לחשבון קיבוץ</div>
+        </button>
+      </div>
+      <div class="account-field field" id="accountField">
+        <label>מספר חשבון <span class="req">*</span></label>
+        <input type="text" id="accountNum" placeholder="למשל: 281" inputmode="numeric">
+      </div>
+    </div>
+
+    <!-- Notes + submit -->
+    <div class="card">
+      <div class="card-head"><div class="card-icon">📝</div>הערות</div>
+      <div class="field">
+        <textarea id="notes" placeholder="אלרגיות, בקשות מיוחדות..."></textarea>
+      </div>
+      <button class="submit-btn" id="submitBtn" onclick="submitOrder()">
+        <span id="btnText">📨 שלח הזמנה</span>
+        <span class="spinner" id="spinner"></span>
+      </button>
+    </div>
+
+  </div><!-- /formWrap -->
+
+  <!-- Success -->
+  <div id="successScreen">
+    <div class="success-ring">✓</div>
+    <h2>ההזמנה נשלחה!</h2>
+    <p id="successMsg">תודה! הזמנתך התקבלה ונרשמה.</p>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+// ── Parse config from URL ────────────────────────────────────────
+let CFG = null;
+let orderQtys = {}; // { "catIndex_itemIndex": qty }
+
+function loadConfig() {
+  const params = new URLSearchParams(window.location.search);
+  const raw = params.get('cfg');
+  if (!raw) {
+    // Demo mode — use sample config
+    CFG = {
+      h:"ראש השנה תשפ״ו",
+      d: new Date(Date.now() + 7*864e5).toISOString().split('T')[0],
+      dt:"17:00",
+      e:"manager@kibbutz.co.il",
+      b:0,
+      w:"",
+      cats:[
+        { n:"🍖 מנות עיקריות", items:[
+          {n:"עוף שלם בתנור",p:45},{n:"בשר צלי",p:55},{n:"דג בתנור",p:50}
+        ]},
+        { n:"🥗 תוספות חמות", items:[
+          {n:"אורז",p:12},{n:"תפוחי אדמה",p:14},{n:"קוסקוס",p:12}
+        ]},
+        { n:"🥙 סלטים", items:[
+          {n:"סלט ירוק",p:10},{n:"חומוס",p:10},{n:"טחינה",p:8}
+        ]}
+      ]
+    };
+  } else {
+    try {
+      CFG = JSON.parse(decodeURIComponent(escape(atob(raw))));
+    } catch(e) {
+      document.getElementById('heroTitle').textContent = "לינק לא תקין";
+      return;
+    }
+  }
+  init();
+}
+
+function init() {
+  // Set hero
+  document.getElementById('heroBadge').textContent = "🌟 " + CFG.h;
+  document.getElementById('heroTitle').textContent = "הזמנת ארוחת " + CFG.h;
+
+  // Deadline check
+  if (CFG.d) {
+    const dl = new Date(CFG.d + 'T' + (CFG.dt||'23:59'));
+    const now = new Date();
+    const dlStr = dl.toLocaleDateString('he-IL',{day:'numeric',month:'long'}) + ' עד ' +
+                  dl.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('deadlineText').textContent = "הזמן לסיום הזמנה: " + dlStr;
+    document.getElementById('deadlinePill').style.display = 'inline-flex';
+
+    if (now > dl) {
+      document.getElementById('formWrap').style.display = 'none';
+      document.getElementById('expiredMsg').style.display = 'block';
+      return;
+    }
+  }
+
+  // Build menu
+  const wrap = document.getElementById('menuWrap');
+  CFG.cats.forEach((cat, ci) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.animationDelay = (0.15 + ci * 0.08) + 's';
+
+    let html = `<div class="card-head"><div class="card-icon">${cat.n.split(' ')[0]}</div>${cat.n.replace(/^\S+\s*/,'')}</div>`;
+
+    cat.items.forEach((item, ii) => {
+      const key = `${ci}_${ii}`;
+      orderQtys[key] = 0;
+      html += `
+        <div class="menu-item" id="mi-${key}">
+          <div class="item-info">
+            <div class="item-name">${item.n}</div>
+            ${item.p > 0 ? `<div class="item-price">₪${item.p} ליחידה</div>` : ''}
+          </div>
+          <div class="qty-ctl">
+            <button class="q-btn" onclick="changeQty('${key}',-1)">−</button>
+            <span class="q-num" id="qn-${key}">0</span>
+            <button class="q-btn" onclick="changeQty('${key}',1)">+</button>
+          </div>
+        </div>`;
+    });
+
+    card.innerHTML = html;
+    wrap.appendChild(card);
+  });
+}
+
+function changeQty(key, delta) {
+  const cur = orderQtys[key] || 0;
+  orderQtys[key] = Math.max(0, cur + delta);
+  document.getElementById(`qn-${key}`).textContent = orderQtys[key];
+  document.getElementById(`mi-${key}`).classList.toggle('has-qty', orderQtys[key] > 0);
+  updateTotal();
+}
+
+let selectedPayment = null;
+
+function selectPayment(type) {
+  selectedPayment = type;
+  document.getElementById('payCard').classList.toggle('selected', type === 'card');
+  document.getElementById('payAccount').classList.toggle('selected', type === 'account');
+  const af = document.getElementById('accountField');
+  af.style.display = type === 'account' ? 'block' : 'none';
+  if (type === 'account') document.getElementById('accountNum').focus();
+}
+
+function updateTotal() {
+  let total = 0;
+  CFG.cats.forEach((cat, ci) => {
+    cat.items.forEach((item, ii) => {
+      total += (orderQtys[`${ci}_${ii}`] || 0) * (item.p || 0);
+    });
+  });
+  document.getElementById('totalDisplay').textContent = '₪' + total;
+}
+
+function buildPayload() {
+  const name    = document.getElementById('fullName').value.trim();
+  const people  = document.getElementById('numPeople').value;
+  const notes   = document.getElementById('notes').value.trim();
+
+  const items = [];
+  let total = 0;
+  CFG.cats.forEach((cat, ci) => {
+    cat.items.forEach((item, ii) => {
+      const qty = orderQtys[`${ci}_${ii}`] || 0;
+      if (qty > 0) {
+        items.push({ category: cat.n, item: item.n, qty, unitPrice: item.p||0, lineTotal: qty*(item.p||0) });
+        total += qty * (item.p || 0);
+      }
+    });
+  });
+
+  return { name, people: Number(people), holiday: CFG.h, items, total, notes,
+           payment: selectedPayment === 'account' ? 'תקציב' : 'כרטיס אשראי',
+           accountNum: selectedPayment === 'account' ? document.getElementById('accountNum').value.trim() : '',
+           timestamp: new Date().toISOString() };
+}
+
+async function submitOrder() {
+  const name = document.getElementById('fullName').value.trim();
+  if (!name) { alert('נא להזין שם מלא'); document.getElementById('fullName').focus(); return; }
+
+  if (!selectedPayment) { alert('נא לבחור אופן תשלום'); return; }
+  if (selectedPayment === 'account' && !document.getElementById('accountNum').value.trim()) {
+    alert('נא להזין מספר חשבון');
+    document.getElementById('accountNum').focus();
+    return;
+  }
+
+  const payload = buildPayload();
+  if (payload.items.length === 0) { alert('נא לבחור לפחות מנה אחת'); return; }
+
+  // Disable button, show spinner
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  document.getElementById('btnText').style.display = 'none';
+  document.getElementById('spinner').classList.add('show');
+
+  if (CFG.w) {
+    // Send to Power Automate
+    try {
+      await fetch(CFG.w, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch(e) {
+      // Network error — show fallback mailto
+      fallbackMailto(payload);
+      return;
+    }
+  } else {
+    // No webhook — fallback to mailto
+    fallbackMailto(payload);
+    return;
+  }
+
+  showSuccess(name);
+}
+
+function fallbackMailto(payload) {
+  const lines = [
+    `הזמנה — ${payload.holiday}`,
+    `שם: ${payload.name}  |  נפשות: ${payload.people}`,
+    '──────────────',
+    ...payload.items.map(i => `${i.category}: ${i.item} × ${i.qty}  (₪${i.lineTotal})`),
+    '──────────────',
+    `סה"כ: ₪${payload.total}`,
+    `תשלום: ${payload.payment}${payload.accountNum ? ' — חשבון ' + payload.accountNum : ''}`,
+  ].filter(Boolean).join('\n');
+
+  const mailto = `mailto:${CFG.e||''}?subject=${encodeURIComponent('הזמנת '+payload.holiday+' — '+payload.name)}&body=${encodeURIComponent(lines)}`;
+  window.location.href = mailto;
+  setTimeout(() => showSuccess(payload.name), 1000);
+}
+
+function showSuccess(name) {
+  document.getElementById('formWrap').style.display = 'none';
+  const sc = document.getElementById('successScreen');
+  sc.classList.add('show');
+  document.getElementById('successMsg').textContent = `תודה ${name}! הזמנתך נרשמה בהצלחה בטבלת האחראית.`;
+}
+
+loadConfig();
+</script>
+</body>
+</html>

@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ממשק ניהול — הזמנות חג</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:       #1C1917;
+  --ink2:      #44403C;
+  --muted:     #78716C;
+  --border:    #E7E5E4;
+  --surface:   #FAFAF9;
+  --white:     #FFFFFF;
+  --gold:      #B45309;
+  --gold-bg:   #FEF3C7;
+  --gold-mid:  #D97706;
+  --green:     #15803D;
+  --green-bg:  #DCFCE7;
+  --red:       #B91C1C;
+  --red-bg:    #FEE2E2;
+  --blue:      #1D4ED8;
+  --blue-bg:   #DBEAFE;
+  --radius:    14px;
+  --shadow:    0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Heebo', sans-serif;
+  background: #F5F4F0;
+  color: var(--ink);
+  min-height: 100vh;
+  padding: 0 0 80px;
+}
+
+/* ── Top bar ── */
+.topbar {
+  background: var(--ink);
+  color: white;
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar-brand { font-size: 15px; font-weight: 700; letter-spacing: 0.3px; display: flex; align-items: center; gap: 10px; }
+.topbar-brand .dot { width: 8px; height: 8px; background: var(--gold-mid); border-radius: 50%; }
+.topbar-pill {
+  background: rgba(255,255,255,0.12);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.8);
+}
+
+/* ── Layout ── */
+.page {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.page-sub {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 32px;
+}
+
+/* ── Steps ── */
+.steps {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 28px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.step-chip {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: var(--border);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1.5px solid transparent;
+}
+.step-chip.active {
+  background: var(--ink);
+  color: white;
+  border-color: var(--ink);
+}
+.step-chip.done {
+  background: var(--green-bg);
+  color: var(--green);
+  border-color: #86EFAC;
+}
+.step-num {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+}
+.step-chip.done .step-num::after { content: "✓"; }
+.step-chip:not(.done) .step-num { background: rgba(0,0,0,0.15); }
+
+/* ── Cards ── */
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+  animation: fadeUp 0.4s ease both;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.card-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: var(--gold-bg);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+
+/* ── Form ── */
+.field { margin-bottom: 16px; }
+.field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink2);
+  margin-bottom: 6px;
+}
+.field input[type="text"],
+.field input[type="date"],
+.field input[type="email"],
+.field input[type="number"],
+.field input[type="time"] {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-family: 'Heebo', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--surface);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  direction: rtl;
+}
+.field input:focus {
+  border-color: var(--gold-mid);
+  box-shadow: 0 0 0 3px rgba(217,119,6,0.1);
+  background: white;
+}
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media(max-width:500px){ .row2 { grid-template-columns: 1fr; } }
+
+/* ── Category section ── */
+.cat-block {
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.cat-header {
+  background: var(--surface);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.cat-name-input {
+  border: none;
+  background: transparent;
+  font-family: 'Heebo', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  width: 200px;
+  outline: none;
+  direction: rtl;
+}
+.cat-name-input:focus { border-bottom: 1.5px solid var(--gold-mid); }
+
+.items-list { padding: 10px 16px 4px; }
+
+.item-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  animation: fadeIn 0.2s ease both;
+}
+.item-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Heebo', sans-serif;
+  font-size: 14px;
+  background: var(--surface);
+  outline: none;
+  direction: rtl;
+  transition: border-color 0.2s;
+}
+.item-input:focus { border-color: var(--gold-mid); background: white; }
+.item-input.price-input { width: 90px; flex: 0 0 90px; text-align: center; }
+
+.price-label {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.btn-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: white;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.btn-icon:hover { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+
+.add-item-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  margin: 6px 0 12px;
+  border: 1.5px dashed var(--border);
+  border-radius: 8px;
+  background: none;
+  font-family: 'Heebo', sans-serif;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+.add-item-btn:hover { border-color: var(--gold-mid); color: var(--gold); background: var(--gold-bg); }
+
+.add-cat-btn {
+  width: 100%;
+  padding: 12px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: none;
+  font-family: 'Heebo', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 16px;
+}
+.add-cat-btn:hover { border-color: var(--gold-mid); color: var(--gold); background: var(--gold-bg); }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  border-radius: 10px;
+  font-family: 'Heebo', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+.btn-primary {
+  background: var(--ink);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.btn-primary:hover { background: #292524; box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
+.btn-gold {
+  background: var(--gold-mid);
+  color: white;
+  box-shadow: 0 2px 8px rgba(217,119,6,0.3);
+}
+.btn-gold:hover { background: var(--gold); }
+.btn-outline {
+  background: white;
+  color: var(--ink);
+  border: 1.5px solid var(--border);
+}
+.btn-outline:hover { border-color: var(--ink); }
+
+/* ── Link output ── */
+.link-box {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 13px;
+  font-family: monospace;
+  word-break: break-all;
+  color: var(--blue);
+  margin-bottom: 12px;
+  direction: ltr;
+  text-align: left;
+  line-height: 1.6;
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.copy-success {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── Summary card ── */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.summary-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.summary-item .s-label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.summary-item .s-val   { font-size: 15px; font-weight: 700; color: var(--ink); margin-top: 3px; }
+
+/* ── Animations ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Panel sections ── */
+.panel { display: none; }
+.panel.active { display: block; }
+
+.action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--gold-bg);
+  color: var(--gold);
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="dot"></div>
+    ממשק ניהול הזמנות
+  </div>
+  <div class="topbar-pill">צד אחראית 🔒</div>
+</div>
+
+<div class="page">
+  <div class="page-title">הגדרת תפריט חג</div>
+  <p class="page-sub">מלאי את כל הפרטים, לחצי על "צור לינק" ושלחי לחברים</p>
+
+  <!-- Steps nav -->
+  <div class="steps">
+    <div class="step-chip active" id="chip0" onclick="goStep(0)">
+      <span class="step-num">1</span> פרטי החג
+    </div>
+    <div class="step-chip" id="chip1" onclick="goStep(1)">
+      <span class="step-num">2</span> תפריט ומחירים
+    </div>
+    <div class="step-chip" id="chip2" onclick="goStep(2)">
+      <span class="step-num">3</span> הגדרות Power Automate
+    </div>
+    <div class="step-chip" id="chip3" onclick="goStep(3)">
+      <span class="step-num">4</span> יצירת לינק
+    </div>
+  </div>
+
+  <!-- ── STEP 0: פרטי החג ── -->
+  <div class="panel active" id="panel0">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="card-icon">📅</div> פרטי האירוע</div>
+      </div>
+
+      <div class="field">
+        <label>שם החג</label>
+        <input type="text" id="holidayName" placeholder="למשל: ראש השנה תשפ״ו" value="ראש השנה תשפ״ו">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>תאריך אחרון להזמנה</label>
+          <input type="date" id="deadline">
+        </div>
+        <div class="field">
+          <label>שעת סיום</label>
+          <input type="time" id="deadlineTime" value="17:00">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>מייל האחראית (לקבלת הזמנות)</label>
+          <input type="email" id="managerEmail" placeholder="rachelet@kibbutz.co.il">
+        </div>
+        <div class="field">
+          <label>שם האחראית (יוצג בטופס)</label>
+          <input type="text" id="managerName" placeholder="למשל: רחל לוי">
+        </div>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <div></div>
+      <button class="btn btn-primary" onclick="goStep(1)">המשך לתפריט ←</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 1: תפריט ── -->
+  <div class="panel" id="panel1">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="card-icon">🍽️</div> קטגוריות ומנות</div>
+        <span class="tag">ניתן לגרור לשינוי סדר</span>
+      </div>
+
+      <div id="categoriesContainer"></div>
+
+      <button class="add-cat-btn" onclick="addCategory()">+ הוסף קטגוריה חדשה</button>
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-outline" onclick="goStep(0)">→ חזור</button>
+      <button class="btn btn-primary" onclick="goStep(2)">המשך להגדרות ←</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: Power Automate ── -->
+  <div class="panel" id="panel2">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="card-icon">⚡</div> Power Automate Webhook</div>
+      </div>
+
+      <div style="background:var(--blue-bg); border-radius:10px; padding:14px 16px; margin-bottom:20px; font-size:13px; line-height:1.8; color:#1e3a8a;">
+        <strong>איך מגדירים Flow ב-Power Automate:</strong><br>
+        1. כנסי ל-<strong>make.powerautomate.com</strong><br>
+        2. צרי Flow חדש → Trigger: <strong>"When a HTTP request is received"</strong><br>
+        3. הוסיפי פעולה: <strong>"Add a row into a table" (Excel Online)</strong><br>
+        4. בחרי את קובץ האקסל ב-SharePoint ואת הטבלה<br>
+        5. העתיקי את ה-<strong>HTTP POST URL</strong> לשדה למטה
+      </div>
+
+      <div class="field">
+        <label>Power Automate Webhook URL</label>
+        <input type="text" id="webhookUrl"
+          placeholder="https://prod-xx.westeurope.logic.azure.com/workflows/...">
+      </div>
+
+      <div style="background:var(--gold-bg); border-radius:10px; padding:12px 16px; font-size:12px; color:#92400e; line-height:1.7;">
+        💡 <strong>מבנה JSON שה-Flow יקבל:</strong><br>
+        <code>{ "name": "...", "holiday": "...", "items": [...], "total": 0, "notes": "...", "timestamp": "..." }</code>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-outline" onclick="goStep(1)">→ חזור</button>
+      <button class="btn btn-primary" onclick="goStep(3)">צור לינק ←</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: לינק ── -->
+  <div class="panel" id="panel3">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="card-icon">🔗</div> לינק לשליחה לחברים</div>
+      </div>
+
+      <!-- Summary -->
+      <div class="summary-grid" id="summaryGrid"></div>
+
+      <div id="linkBox" class="link-box" style="display:none"></div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
+        <button class="btn btn-gold" onclick="generateLink()">⚡ צור לינק</button>
+        <button class="btn btn-outline" id="copyBtn" onclick="copyLink()" style="display:none">📋 העתק לינק</button>
+        <span class="copy-success" id="copySuccess">✓ הועתק!</span>
+      </div>
+
+      <div id="shareSection" style="display:none">
+        <div style="border-top:1px solid var(--border); padding-top:16px; margin-top:4px;">
+          <p style="font-size:13px; font-weight:600; color:var(--ink2); margin-bottom:12px;">שלח לחברים דרך:</p>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn" style="background:#25D366; color:white; font-size:13px;" onclick="shareWhatsapp()">
+              📱 WhatsApp
+            </button>
+            <button class="btn btn-outline" style="font-size:13px;" onclick="shareEmail()">
+              📧 מייל
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:8px; font-size:12px; color:var(--muted); text-align:center; line-height:1.8;">
+      ⚠️ הלינק מכיל את כל פרטי התפריט ואת ה-Webhook URL.<br>
+      שתף רק עם חברי הקיבוץ הרלוונטיים.
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ── Default categories ──────────────────────────────────────────
+const defaultCategories = [
+  { name: "🍖 מנות עיקריות", items: [
+    { name: "עוף שלם בתנור", price: 45 },
+    { name: "בשר צלי", price: 55 },
+    { name: "דג בתנור", price: 50 },
+  ]},
+  { name: "🥗 תוספות חמות", items: [
+    { name: "אורז", price: 12 },
+    { name: "תפוחי אדמה בתנור", price: 14 },
+    { name: "קוסקוס", price: 12 },
+  ]},
+  { name: "🥙 סלטים", items: [
+    { name: "סלט ירוק", price: 10 },
+    { name: "חומוס", price: 10 },
+    { name: "טחינה", price: 8 },
+  ]},
+];
+
+let categories = JSON.parse(JSON.stringify(defaultCategories));
+let generatedLink = "";
+
+// ── Step navigation ─────────────────────────────────────────────
+function goStep(n) {
+  document.querySelectorAll('.panel').forEach((p,i) => {
+    p.classList.toggle('active', i === n);
+  });
+  document.querySelectorAll('.step-chip').forEach((c,i) => {
+    c.classList.remove('active','done');
+    if (i < n) c.classList.add('done');
+    else if (i === n) c.classList.add('active');
+  });
+  if (n === 3) buildSummary();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ── Render categories ────────────────────────────────────────────
+function renderCategories() {
+  const container = document.getElementById('categoriesContainer');
+  container.innerHTML = '';
+  categories.forEach((cat, ci) => {
+    const block = document.createElement('div');
+    block.className = 'cat-block';
+    block.innerHTML = `
+      <div class="cat-header">
+        <input class="cat-name-input" value="${cat.name}"
+          onchange="categories[${ci}].name=this.value"
+          placeholder="שם קטגוריה...">
+        <button class="btn-icon" onclick="removeCategory(${ci})" title="מחק קטגוריה">🗑</button>
+      </div>
+      <div class="items-list" id="items-${ci}">
+        ${cat.items.map((item, ii) => renderItem(ci, ii, item)).join('')}
+      </div>
+      <div style="padding:0 16px;">
+        <button class="add-item-btn" onclick="addItem(${ci})">+ הוסף מנה</button>
+      </div>`;
+    container.appendChild(block);
+  });
+}
+
+function renderItem(ci, ii, item) {
+  return `
+    <div class="item-row" id="item-${ci}-${ii}">
+      <input class="item-input" value="${item.name}"
+        onchange="categories[${ci}].items[${ii}].name=this.value"
+        placeholder="שם המנה...">
+      <input class="item-input price-input" type="number" value="${item.price||''}"
+        onchange="categories[${ci}].items[${ii}].price=Number(this.value)||0"
+        placeholder="₪" min="0">
+      <span class="price-label">₪</span>
+      <button class="btn-icon" onclick="removeItem(${ci},${ii})">✕</button>
+    </div>`;
+}
+
+function addCategory() {
+  categories.push({ name: "קטגוריה חדשה", items: [{ name: "", price: 0 }] });
+  renderCategories();
+}
+function removeCategory(ci) {
+  if (categories.length === 1) return alert("חייבת להיות לפחות קטגוריה אחת");
+  categories.splice(ci, 1);
+  renderCategories();
+}
+function addItem(ci) {
+  categories[ci].items.push({ name: "", price: 0 });
+  renderCategories();
+}
+function removeItem(ci, ii) {
+  if (categories[ci].items.length === 1) return alert("חייבת להיות לפחות מנה אחת");
+  categories[ci].items.splice(ii, 1);
+  renderCategories();
+}
+
+// ── Build summary ────────────────────────────────────────────────
+function buildSummary() {
+  const holiday   = document.getElementById('holidayName').value || "—";
+  const deadline  = document.getElementById('deadline').value;
+  const dlTime    = document.getElementById('deadlineTime').value || "17:00";
+  const budget    = document.getElementById('budget').value;
+  const webhook   = document.getElementById('webhookUrl').value;
+
+  const totalItems = categories.reduce((s,c) => s + c.items.filter(i=>i.name).length, 0);
+  const dlStr = deadline
+    ? new Date(deadline).toLocaleDateString('he-IL',{day:'numeric',month:'long',year:'numeric'}) + ' ' + dlTime
+    : '—';
+
+  document.getElementById('summaryGrid').innerHTML = `
+    <div class="summary-item"><div class="s-label">חג</div><div class="s-val">${holiday}</div></div>
+    <div class="summary-item"><div class="s-label">מועד אחרון</div><div class="s-val" style="font-size:13px">${dlStr}</div></div>
+    <div class="summary-item"><div class="s-label">קטגוריות</div><div class="s-val">${categories.length}</div></div>
+    <div class="summary-item"><div class="s-label">סה"כ מנות</div><div class="s-val">${totalItems}</div></div>
+    <div class="summary-item"><div class="s-label">אחראית</div><div class="s-val">${document.getElementById('managerName').value||'—'}</div></div>
+    <div class="summary-item"><div class="s-label">Power Automate</div><div class="s-val" style="font-size:12px;color:${webhook?'var(--green)':'var(--red)'}">${webhook?'✓ מוגדר':'✗ חסר'}</div></div>
+  `;
+}
+
+// ── Generate link ────────────────────────────────────────────────
+function generateLink() {
+  const config = {
+    h: document.getElementById('holidayName').value,
+    d: document.getElementById('deadline').value,
+    dt: document.getElementById('deadlineTime').value,
+    e: document.getElementById('managerEmail').value,
+    mn: document.getElementById('managerName').value,
+    w: document.getElementById('webhookUrl').value,
+    cats: categories.map(c => ({
+      n: c.name,
+      items: c.items.filter(i=>i.name).map(i=>({ n:i.name, p:i.price||0 }))
+    }))
+  };
+
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(config))));
+
+  // Build absolute URL — works on GitHub Pages, SharePoint, or localhost
+  const base = window.location.href.replace(/admin\.html.*$/, '');
+  generatedLink = `${base}order.html?cfg=${encoded}`;
+
+  document.getElementById('linkBox').textContent = generatedLink;
+  document.getElementById('linkBox').style.display = 'block';
+  document.getElementById('copyBtn').style.display = 'inline-flex';
+  document.getElementById('shareSection').style.display = 'block';
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(generatedLink).then(() => {
+    const s = document.getElementById('copySuccess');
+    s.style.display = 'flex';
+    setTimeout(() => s.style.display='none', 2500);
+  });
+}
+
+function shareWhatsapp() {
+  const msg = `הזמנות ${document.getElementById('holidayName').value} — לחצ/י כאן להזמנה:\n${generatedLink}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+}
+
+function shareEmail() {
+  const subj = `הזמנת ארוחת ${document.getElementById('holidayName').value}`;
+  const body = `שלום,\n\nניתן להגיש הזמנה לארוחת ${document.getElementById('holidayName').value} דרך הלינק הבא:\n\n${generatedLink}\n\nיש להזמין עד ${document.getElementById('deadline').value} ${document.getElementById('deadlineTime').value}`;
+  window.location.href = `mailto:?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+}
+
+// ── Set default deadline (7 days from now) ──────────────────────
+const d = new Date(); d.setDate(d.getDate()+7);
+document.getElementById('deadline').value = d.toISOString().split('T')[0];
+
+// ── Init ─────────────────────────────────────────────────────────
+renderCategories();
+</script>
+</body>
+</html>
