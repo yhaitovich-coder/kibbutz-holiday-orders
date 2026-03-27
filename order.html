@@ -262,7 +262,7 @@ body {
 <!-- Hero -->
 <div class="hero">
   <div style="position:absolute;top:10px;left:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);font-family:monospace;">
-    v2.6 · 27.03.2026
+    v2.7 · 27.03.2026
   </div>
   <div class="hero-badge" id="heroBadge">הזמנת ארוחת חג</div>
   <h1 id="heroTitle">טוען...</h1>
@@ -530,15 +530,13 @@ async function submitOrder() {
 
   if (CFG.w) {
     try {
-      Logger.info('Sending to Google Apps Script via form POST');
-      const formData = new FormData();
-      formData.append('payload', JSON.stringify(payload));
+      Logger.info('Sending to Google Apps Script via POST text/plain');
       fetch(CFG.w, {
         method: 'POST',
         mode: 'no-cors',
-        body: formData
+        body: JSON.stringify(payload)
       });
-      Logger.ok('Form POST sent — assuming success');
+      Logger.ok('POST sent — assuming success');
       await new Promise(r => setTimeout(r, 1500));
     } catch(e) {
       Logger.error('POST failed', { err: String(e) });
