@@ -521,24 +521,21 @@ async function submitOrder() {
   document.getElementById('spinner').classList.add('show');
 
   if (CFG.w) {
-    // שלח ל-Google Apps Script
+    // שלח ל-Google Apps Script דרך GET (עוקף מגבלת CORS)
     try {
-      Logger.info('Sending to Google Apps Script', { url: CFG.w.substring(0,60)+'...' });
-      await fetch(CFG.w, {
-        method: 'POST',
-        mode: 'no-cors', // נדרש עבור Apps Script
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      // no-cors תמיד מצליח — נניח הצלחה
-      Logger.ok('Sent to Google Apps Script (no-cors)');
+      const encoded = encodeURIComponent(JSON.stringify(payload));
+      const url = `${CFG.w}?data=${encoded}`;
+      Logger.info('Sending to Google Apps Script via GET', { urlLen: url.length });
+      const res = await fetch(url);
+      const json = await res.json();
+      Logger.ok('Google Apps Script response', json);
+      if (json.status !== 'ok') throw new Error(json.message);
     } catch(e) {
-      Logger.error('Google Apps Script fetch failed', { err: String(e) });
+      Logger.error('Google Apps Script failed', { err: String(e) });
       fallbackMailto(payload);
       return;
     }
   } else {
-    // אין webhook — fallback למייל
     Logger.warn('No webhook configured — using mailto fallback');
     fallbackMailto(payload);
     return;
