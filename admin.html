@@ -415,7 +415,7 @@ body {
   </div>
   <div style="display:flex;gap:8px;align-items:center;">
     <div style="background:rgba(217,119,6,0.25);border:1px solid rgba(217,119,6,0.5);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;color:#FDE68A;font-family:monospace;">
-      v2.1 · 27.03.2026
+    v2.2 · 27.03.2026
     </div>
     <div class="topbar-pill">צד אחראית 🔒</div>
   </div>
@@ -681,8 +681,8 @@ function buildSummary() {
   const holiday   = document.getElementById('holidayName').value || "—";
   const deadline  = document.getElementById('deadline').value;
   const dlTime    = document.getElementById('deadlineTime').value || "17:00";
-  const budget    = document.getElementById('budget').value;
   const webhook   = document.getElementById('webhookUrl').value;
+  const manager   = document.getElementById('managerName').value || '—';
 
   const totalItems = categories.reduce((s,c) => s + c.items.filter(i=>i.name).length, 0);
   const dlStr = deadline
@@ -694,8 +694,8 @@ function buildSummary() {
     <div class="summary-item"><div class="s-label">מועד אחרון</div><div class="s-val" style="font-size:13px">${dlStr}</div></div>
     <div class="summary-item"><div class="s-label">קטגוריות</div><div class="s-val">${categories.length}</div></div>
     <div class="summary-item"><div class="s-label">סה"כ מנות</div><div class="s-val">${totalItems}</div></div>
-    <div class="summary-item"><div class="s-label">אחראית</div><div class="s-val">${document.getElementById('managerName').value||'—'}</div></div>
-    <div class="summary-item"><div class="s-label">Power Automate</div><div class="s-val" style="font-size:12px;color:${webhook?'var(--green)':'var(--red)'}">${webhook?'✓ מוגדר':'✗ חסר'}</div></div>
+    <div class="summary-item"><div class="s-label">אחראית</div><div class="s-val">${manager}</div></div>
+    <div class="summary-item"><div class="s-label">Google Sheets</div><div class="s-val" style="font-size:12px;color:${webhook?'var(--green)':'var(--red)'}">${webhook?'✓ מוגדר':'✗ חסר'}</div></div>
   `;
 }
 
