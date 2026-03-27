@@ -196,13 +196,14 @@ body {
 .total-bar {
   background: linear-gradient(135deg, var(--ink) 0%, #292524 100%);
   border-radius:var(--r);
-  padding:18px 22px;
+  padding:20px 24px;
   display:flex; align-items:center; justify-content:space-between;
   margin-bottom:16px;
-  box-shadow:0 4px 20px rgba(28,25,23,0.2);
+  box-shadow:0 4px 20px rgba(28,25,23,0.25);
+  border: 2px solid rgba(217,119,6,0.3);
 }
-.total-label { font-size:14px; font-weight:600; color:rgba(255,255,255,0.7); }
-.total-amount { font-size:28px; font-weight:900; color:var(--warm2); }
+.total-label { font-size:15px; font-weight:700; color:rgba(255,255,255,0.8); }
+.total-amount { font-size:42px; font-weight:900; color:var(--warm2); letter-spacing:-1px; line-height:1; }
 
 /* ── Submit ── */
 .submit-btn {
@@ -282,15 +283,9 @@ body {
     <!-- Personal -->
     <div class="card">
       <div class="card-head"><div class="card-icon">👤</div>פרטים אישיים</div>
-      <div class="row2">
-        <div class="field">
-          <label>שם מלא <span class="req">*</span></label>
-          <input type="text" id="fullName" placeholder="ישראל ישראלי">
-        </div>
-        <div class="field">
-          <label>מספר נפשות</label>
-          <input type="number" id="numPeople" min="1" max="20" value="1">
-        </div>
+      <div class="field">
+        <label>שם מלא <span class="req">*</span></label>
+        <input type="text" id="fullName" placeholder="ישראל ישראלי">
       </div>
     </div>
 
@@ -355,7 +350,9 @@ let orderQtys = {}; // { "catIndex_itemIndex": qty }
 function loadConfig() {
   const params = new URLSearchParams(window.location.search);
   const raw = params.get('cfg');
+  Logger.info('loadConfig called', { hasCfg: !!raw });
   if (!raw) {
+    Logger.warn('No cfg param — running in DEMO mode');
     // Demo mode — use sample config
     CFG = {
       h:"ראש השנה תשפ״ו",
@@ -378,8 +375,13 @@ function loadConfig() {
     };
   } else {
     try {
-      CFG = JSON.parse(decodeURIComponent(escape(atob(raw))));
+      const decoded = decodeURIComponent(atob(raw).split('').map(c =>
+        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+      ).join(''));
+      CFG = JSON.parse(decoded);
+      Logger.ok('Config decoded successfully', { holiday: CFG.h, cats: CFG.cats ? CFG.cats.length : 0 });
     } catch(e) {
+      Logger.error('Config decode failed', { raw_prefix: raw ? raw.substring(0,40) : 'null', err: String(e) });
       document.getElementById('heroTitle').textContent = "לינק לא תקין";
       return;
     }
@@ -469,23 +471,29 @@ function updateTotal() {
 }
 
 function buildPayload() {
-  const name    = document.getElementById('fullName').value.trim();
-  const people  = document.getElementById('numPeople').value;
-  const notes   = document.getElementById('notes').value.trim();
+  const name   = document.getElementById('fullName').value.trim();
+  const notes  = document.getElementById('notes').value.trim();
 
   const items = [];
   let total = 0;
+  // כל המנות בתפריט — כולל כמות 0 (לבניית עמודות)
+  const allDishNames = [];
   CFG.cats.forEach((cat, ci) => {
     cat.items.forEach((item, ii) => {
       const qty = orderQtys[`${ci}_${ii}`] || 0;
+      allDishNames.push(item.n);
       if (qty > 0) {
-        items.push({ category: cat.n, item: item.n, qty, unitPrice: item.p||0, lineTotal: qty*(item.p||0) });
+        items.push({ category: cat.n, item: item.n, qty,
+                     unitPrice: item.p||0, lineTotal: qty*(item.p||0) });
         total += qty * (item.p || 0);
       }
     });
   });
 
-  return { name, people: Number(people), holiday: CFG.h, items, total, notes,
+  // רשימת עמודות לבניית header דינמי
+  const columns = [...allDishNames];
+
+  return { name, holiday: CFG.h, items, columns, total, notes,
            payment: selectedPayment === 'account' ? 'תקציב' : 'כרטיס אשראי',
            accountNum: selectedPayment === 'account' ? document.getElementById('accountNum').value.trim() : '',
            timestamp: new Date().toISOString() };
@@ -495,6 +503,7 @@ async function submitOrder() {
   const name = document.getElementById('fullName').value.trim();
   if (!name) { alert('נא להזין שם מלא'); document.getElementById('fullName').focus(); return; }
 
+  Logger.info('Submit clicked', { name: document.getElementById('fullName').value, payment: selectedPayment });
   if (!selectedPayment) { alert('נא לבחור אופן תשלום'); return; }
   if (selectedPayment === 'account' && !document.getElementById('accountNum').value.trim()) {
     alert('נא להזין מספר חשבון');
@@ -512,20 +521,25 @@ async function submitOrder() {
   document.getElementById('spinner').classList.add('show');
 
   if (CFG.w) {
-    // Send to Power Automate
+    // שלח ל-Google Apps Script
     try {
+      Logger.info('Sending to Google Apps Script', { url: CFG.w.substring(0,60)+'...' });
       await fetch(CFG.w, {
         method: 'POST',
+        mode: 'no-cors', // נדרש עבור Apps Script
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      // no-cors תמיד מצליח — נניח הצלחה
+      Logger.ok('Sent to Google Apps Script (no-cors)');
     } catch(e) {
-      // Network error — show fallback mailto
+      Logger.error('Google Apps Script fetch failed', { err: String(e) });
       fallbackMailto(payload);
       return;
     }
   } else {
-    // No webhook — fallback to mailto
+    // אין webhook — fallback למייל
+    Logger.warn('No webhook configured — using mailto fallback');
     fallbackMailto(payload);
     return;
   }
@@ -534,6 +548,7 @@ async function submitOrder() {
 }
 
 function fallbackMailto(payload) {
+  Logger.warn('Using mailto fallback', { to: CFG.e });
   const lines = [
     `הזמנה — ${payload.holiday}`,
     `שם: ${payload.name}  |  נפשות: ${payload.people}`,
@@ -550,11 +565,257 @@ function fallbackMailto(payload) {
 }
 
 function showSuccess(name) {
+  Logger.ok('Order submitted successfully', { name });
   document.getElementById('formWrap').style.display = 'none';
   const sc = document.getElementById('successScreen');
   sc.classList.add('show');
   document.getElementById('successMsg').textContent = `תודה ${name}! הזמנתך נרשמה בהצלחה בטבלת האחראית.`;
 }
+
+// ══════════════════════════════════════════════════════════════════
+//  🪵 DEBUG LOGGER — מערכת לוג לדיבאג
+//  מוטמע בשני הקבצים: admin.html + order.html
+// ══════════════════════════════════════════════════════════════════
+
+const Logger = (() => {
+  const entries = [];
+  const MAX = 200;
+
+  const LEVELS = {
+    INFO:  { label: 'INFO',  color: '#4FC3F7' },
+    OK:    { label: 'OK ✓',  color: '#81C784' },
+    WARN:  { label: 'WARN',  color: '#FFB74D' },
+    ERROR: { label: 'ERROR', color: '#E57373' },
+    DEBUG: { label: 'DEBUG', color: '#CE93D8' },
+  };
+
+  function ts() {
+    return new Date().toISOString().replace('T',' ').slice(0,23);
+  }
+
+  function add(level, msg, data) {
+    const entry = {
+      t: ts(), level,
+      msg: typeof msg === 'string' ? msg : JSON.stringify(msg),
+      data: data !== undefined ? JSON.stringify(data, null, 2) : null
+    };
+    entries.push(entry);
+    if (entries.length > MAX) entries.shift();
+
+    // Console mirror
+    const style = `color:${LEVELS[level].color};font-weight:bold`;
+    if (data !== undefined) {
+      console.log(`%c[${LEVELS[level].label}] ${entry.msg}`, style, data);
+    } else {
+      console.log(`%c[${LEVELS[level].label}] ${entry.msg}`, style);
+    }
+
+    renderLog();
+  }
+
+  function renderLog() {
+    const el = document.getElementById('__logEntries');
+    if (!el) return;
+    el.innerHTML = entries.slice().reverse().map(e => {
+      const cfg = LEVELS[e.level] || LEVELS.INFO;
+      return `<div class="__logEntry">
+        <span class="__logTime">${e.t}</span>
+        <span class="__logLevel" style="color:${cfg.color}">[${cfg.label}]</span>
+        <span class="__logMsg">${escHtml(e.msg)}</span>
+        ${e.data ? `<pre class="__logData">${escHtml(e.data)}</pre>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function copyLog() {
+    const text = entries.map(e =>
+      `[${e.t}] [${e.level}] ${e.msg}${e.data ? '\n' + e.data : ''}`
+    ).join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('__copyBtn');
+      if (btn) { btn.textContent = '✅ הועתק!'; setTimeout(() => btn.textContent = '📋 העתק לוג', 2000); }
+    }).catch(() => {
+      // fallback
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta);
+    });
+  }
+
+  function clearLog() {
+    entries.length = 0;
+    renderLog();
+  }
+
+  function injectUI(pageName) {
+    // Inject CSS
+    const style = document.createElement('style');
+    style.textContent = `
+      #__logPanel {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        height: 0;
+        background: #0D1117;
+        border-top: 2px solid #30363D;
+        transition: height 0.3s ease;
+        z-index: 9999;
+        font-family: 'Courier New', monospace;
+        direction: ltr;
+      }
+      #__logPanel.open { height: 280px; }
+      #__logToggle {
+        position: fixed;
+        bottom: 12px; left: 12px;
+        background: #21262D;
+        color: #58A6FF;
+        border: 1px solid #30363D;
+        border-radius: 8px;
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        z-index: 10000;
+        font-family: monospace;
+        transition: background 0.15s;
+      }
+      #__logToggle:hover { background: #30363D; }
+      #__logToolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background: #161B22;
+        border-bottom: 1px solid #30363D;
+      }
+      #__logToolbar span {
+        color: #8B949E;
+        font-size: 11px;
+        flex: 1;
+      }
+      .__toolBtn {
+        background: #21262D;
+        color: #C9D1D9;
+        border: 1px solid #30363D;
+        border-radius: 6px;
+        padding: 3px 10px;
+        font-size: 11px;
+        cursor: pointer;
+        font-family: monospace;
+      }
+      .__toolBtn:hover { background: #30363D; }
+      #__logEntries {
+        height: calc(280px - 34px);
+        overflow-y: auto;
+        padding: 6px 12px;
+      }
+      .__logEntry {
+        padding: 3px 0;
+        border-bottom: 1px solid #21262D;
+        font-size: 11px;
+        line-height: 1.5;
+      }
+      .__logTime  { color: #484F58; margin-left: 6px; }
+      .__logLevel { font-weight: 700; margin: 0 6px; }
+      .__logMsg   { color: #C9D1D9; }
+      .__logData  {
+        color: #8B949E;
+        margin: 2px 0 2px 120px;
+        font-size: 10px;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      #__errBadge {
+        position: fixed;
+        bottom: 12px; left: 120px;
+        background: #DA3633;
+        color: white;
+        border-radius: 10px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        z-index: 10000;
+        display: none;
+        font-family: monospace;
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Panel HTML
+    const panel = document.createElement('div');
+    panel.id = '__logPanel';
+    panel.innerHTML = `
+      <div id="__logToolbar">
+        <span>🪵 Debug Log — ${pageName}</span>
+        <button class="__toolBtn" id="__copyBtn" onclick="Logger.copy()">📋 העתק לוג</button>
+        <button class="__toolBtn" onclick="Logger.clear()">🗑 נקה</button>
+      </div>
+      <div id="__logEntries"></div>
+    `;
+    document.body.appendChild(panel);
+
+    // Toggle button
+    const toggle = document.createElement('button');
+    toggle.id = '__logToggle';
+    toggle.textContent = '🪵 LOG';
+    toggle.onclick = () => {
+      panel.classList.toggle('open');
+      errBadge.style.display = 'none';
+      errCount = 0;
+    };
+    document.body.appendChild(toggle);
+
+    // Error badge
+    const errBadge = document.createElement('div');
+    errBadge.id = '__errBadge';
+    document.body.appendChild(errBadge);
+
+    // Global error catcher
+    let errCount = 0;
+    window.addEventListener('error', e => {
+      add('ERROR', `${e.message}`, { file: e.filename, line: e.lineno, col: e.colno });
+      errCount++;
+      errBadge.textContent = `${errCount} שגיאה`;
+      errBadge.style.display = 'block';
+    });
+
+    window.addEventListener('unhandledrejection', e => {
+      add('ERROR', `Unhandled Promise: ${e.reason}`, {});
+      errCount++;
+      errBadge.textContent = `${errCount} שגיאה`;
+      errBadge.style.display = 'block';
+    });
+
+    renderLog();
+    add('INFO', `Logger initialized — ${pageName} — ${ts()}`);
+  }
+
+  return {
+    info:  (m, d) => add('INFO',  m, d),
+    ok:    (m, d) => add('OK',    m, d),
+    warn:  (m, d) => add('WARN',  m, d),
+    error: (m, d) => add('ERROR', m, d),
+    debug: (m, d) => add('DEBUG', m, d),
+    copy:  copyLog,
+    clear: clearLog,
+    init:  injectUI,
+  };
+})();
+
+
+// ── Init Logger ───────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  Logger.init('Order — טופס הזמנה');
+  Logger.info('Order page loaded', { url: window.location.href });
+  const raw = new URLSearchParams(window.location.search).get('cfg');
+  Logger.debug('cfg param present', { present: !!raw, length: raw ? raw.length : 0 });
+});
 
 loadConfig();
 </script>

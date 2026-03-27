@@ -429,7 +429,7 @@ body {
       <span class="step-num">2</span> תפריט ומחירים
     </div>
     <div class="step-chip" id="chip2" onclick="goStep(2)">
-      <span class="step-num">3</span> הגדרות Power Automate
+      <span class="step-num">3</span> חיבור Google Sheets
     </div>
     <div class="step-chip" id="chip3" onclick="goStep(3)">
       <span class="step-num">4</span> יצירת לינק
@@ -494,31 +494,30 @@ body {
     </div>
   </div>
 
-  <!-- ── STEP 2: Power Automate ── -->
+  <!-- ── STEP 2: Google Apps Script ── -->
   <div class="panel" id="panel2">
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><div class="card-icon">⚡</div> Power Automate Webhook</div>
+        <div class="card-title"><div class="card-icon">⚡</div> חיבור ל-Google Sheets</div>
       </div>
 
       <div style="background:var(--blue-bg); border-radius:10px; padding:14px 16px; margin-bottom:20px; font-size:13px; line-height:1.8; color:#1e3a8a;">
-        <strong>איך מגדירים Flow ב-Power Automate:</strong><br>
-        1. כנסי ל-<strong>make.powerautomate.com</strong><br>
-        2. צרי Flow חדש → Trigger: <strong>"When a HTTP request is received"</strong><br>
-        3. הוסיפי פעולה: <strong>"Add a row into a table" (Excel Online)</strong><br>
-        4. בחרי את קובץ האקסל ב-SharePoint ואת הטבלה<br>
-        5. העתיקי את ה-<strong>HTTP POST URL</strong> לשדה למטה
+        <strong>איך מקבלים את ה-Webhook URL:</strong><br>
+        1. פתחי את קובץ Google Sheets — <strong>הזמנות לחג</strong><br>
+        2. לחצי על <strong>Extensions → Apps Script</strong><br>
+        3. לחצי על <strong>Deploy → Manage Deployments</strong><br>
+        4. העתיקי את ה-<strong>Web App URL</strong> לשדה למטה
       </div>
 
       <div class="field">
-        <label>Power Automate Webhook URL</label>
+        <label>Google Apps Script Webhook URL</label>
         <input type="text" id="webhookUrl"
-          placeholder="https://prod-xx.westeurope.logic.azure.com/workflows/...">
+          placeholder="https://script.google.com/macros/s/...exec">
       </div>
 
       <div style="background:var(--gold-bg); border-radius:10px; padding:12px 16px; font-size:12px; color:#92400e; line-height:1.7;">
-        💡 <strong>מבנה JSON שה-Flow יקבל:</strong><br>
-        <code>{ "name": "...", "holiday": "...", "items": [...], "total": 0, "notes": "...", "timestamp": "..." }</code>
+        💡 <strong>ההזמנות נשמרות אוטומטית ב-Google Sheets — טאב נפרד לכל חג</strong><br>
+        לינק להורדה כ-Excel: <code>docs.google.com/spreadsheets/d/1ahjlwn8V30v_.../export?format=xlsx</code>
       </div>
     </div>
 
@@ -538,7 +537,15 @@ body {
       <!-- Summary -->
       <div class="summary-grid" id="summaryGrid"></div>
 
-      <div id="linkBox" class="link-box" style="display:none"></div>
+      <div id="linkDisplay" style="display:none; margin-bottom:12px;">
+        <div style="background:var(--surface); border:1.5px solid var(--border); border-radius:10px; padding:16px 18px;">
+          <div style="font-size:12px; color:var(--muted); margin-bottom:8px;">לינק לשליחה לחברים:</div>
+          <a id="linkAnchor" href="#" target="_blank"
+             style="font-size:16px; font-weight:700; color:var(--blue); text-decoration:none; word-break:break-word; display:block; margin-bottom:4px;">
+          </a>
+          <div style="font-size:11px; color:var(--muted); margin-top:6px;">לחץ על הלינק לבדיקה · העתק ושלח לחברים</div>
+        </div>
+      </div>
 
       <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
         <button class="btn btn-gold" onclick="generateLink()">⚡ צור לינק</button>
@@ -603,6 +610,7 @@ function goStep(n) {
     else if (i === n) c.classList.add('active');
   });
   if (n === 3) buildSummary();
+  Logger.debug('Step changed', { step: n });
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
@@ -703,12 +711,18 @@ function generateLink() {
 
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(config))));
 
-  // Build absolute URL — works on GitHub Pages, SharePoint, or localhost
-  const base = window.location.href.replace(/admin\.html.*$/, '');
+  // תמיד GitHub Pages — לא נתיב מקומי
+  Logger.info('Generating link...', { holiday: config.h, cats: config.cats.length });
+  const base = 'https://yhaitovich-coder.github.io/kibbutz-holiday-orders/';
   generatedLink = `${base}order.html?cfg=${encoded}`;
+  Logger.ok('Link generated', { length: encoded.length, url: generatedLink.substring(0,80)+'...' });
 
-  document.getElementById('linkBox').textContent = generatedLink;
-  document.getElementById('linkBox').style.display = 'block';
+  // הצג כהיפרלינק עם שם החג
+  const linkDisplay = document.getElementById('linkDisplay');
+  const linkAnchor  = document.getElementById('linkAnchor');
+  linkAnchor.href        = generatedLink;
+  linkAnchor.textContent = `📩 הזמנה לארוחת ${config.h}`;
+  linkDisplay.style.display = 'block';
   document.getElementById('copyBtn').style.display = 'inline-flex';
   document.getElementById('shareSection').style.display = 'block';
 }
@@ -732,12 +746,252 @@ function shareEmail() {
   window.location.href = `mailto:?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
 }
 
-// ── Set default deadline (7 days from now) ──────────────────────
+// ══════════════════════════════════════════════════════════════════
+//  🪵 DEBUG LOGGER — מערכת לוג לדיבאג
+//  מוטמע בשני הקבצים: admin.html + order.html
+// ══════════════════════════════════════════════════════════════════
+
+const Logger = (() => {
+  const entries = [];
+  const MAX = 200;
+
+  const LEVELS = {
+    INFO:  { label: 'INFO',  color: '#4FC3F7' },
+    OK:    { label: 'OK ✓',  color: '#81C784' },
+    WARN:  { label: 'WARN',  color: '#FFB74D' },
+    ERROR: { label: 'ERROR', color: '#E57373' },
+    DEBUG: { label: 'DEBUG', color: '#CE93D8' },
+  };
+
+  function ts() {
+    return new Date().toISOString().replace('T',' ').slice(0,23);
+  }
+
+  function add(level, msg, data) {
+    const entry = {
+      t: ts(), level,
+      msg: typeof msg === 'string' ? msg : JSON.stringify(msg),
+      data: data !== undefined ? JSON.stringify(data, null, 2) : null
+    };
+    entries.push(entry);
+    if (entries.length > MAX) entries.shift();
+
+    // Console mirror
+    const style = `color:${LEVELS[level].color};font-weight:bold`;
+    if (data !== undefined) {
+      console.log(`%c[${LEVELS[level].label}] ${entry.msg}`, style, data);
+    } else {
+      console.log(`%c[${LEVELS[level].label}] ${entry.msg}`, style);
+    }
+
+    renderLog();
+  }
+
+  function renderLog() {
+    const el = document.getElementById('__logEntries');
+    if (!el) return;
+    el.innerHTML = entries.slice().reverse().map(e => {
+      const cfg = LEVELS[e.level] || LEVELS.INFO;
+      return `<div class="__logEntry">
+        <span class="__logTime">${e.t}</span>
+        <span class="__logLevel" style="color:${cfg.color}">[${cfg.label}]</span>
+        <span class="__logMsg">${escHtml(e.msg)}</span>
+        ${e.data ? `<pre class="__logData">${escHtml(e.data)}</pre>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function copyLog() {
+    const text = entries.map(e =>
+      `[${e.t}] [${e.level}] ${e.msg}${e.data ? '\n' + e.data : ''}`
+    ).join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('__copyBtn');
+      if (btn) { btn.textContent = '✅ הועתק!'; setTimeout(() => btn.textContent = '📋 העתק לוג', 2000); }
+    }).catch(() => {
+      // fallback
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta);
+    });
+  }
+
+  function clearLog() {
+    entries.length = 0;
+    renderLog();
+  }
+
+  function injectUI(pageName) {
+    // Inject CSS
+    const style = document.createElement('style');
+    style.textContent = `
+      #__logPanel {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        height: 0;
+        background: #0D1117;
+        border-top: 2px solid #30363D;
+        transition: height 0.3s ease;
+        z-index: 9999;
+        font-family: 'Courier New', monospace;
+        direction: ltr;
+      }
+      #__logPanel.open { height: 280px; }
+      #__logToggle {
+        position: fixed;
+        bottom: 12px; left: 12px;
+        background: #21262D;
+        color: #58A6FF;
+        border: 1px solid #30363D;
+        border-radius: 8px;
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        z-index: 10000;
+        font-family: monospace;
+        transition: background 0.15s;
+      }
+      #__logToggle:hover { background: #30363D; }
+      #__logToolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background: #161B22;
+        border-bottom: 1px solid #30363D;
+      }
+      #__logToolbar span {
+        color: #8B949E;
+        font-size: 11px;
+        flex: 1;
+      }
+      .__toolBtn {
+        background: #21262D;
+        color: #C9D1D9;
+        border: 1px solid #30363D;
+        border-radius: 6px;
+        padding: 3px 10px;
+        font-size: 11px;
+        cursor: pointer;
+        font-family: monospace;
+      }
+      .__toolBtn:hover { background: #30363D; }
+      #__logEntries {
+        height: calc(280px - 34px);
+        overflow-y: auto;
+        padding: 6px 12px;
+      }
+      .__logEntry {
+        padding: 3px 0;
+        border-bottom: 1px solid #21262D;
+        font-size: 11px;
+        line-height: 1.5;
+      }
+      .__logTime  { color: #484F58; margin-left: 6px; }
+      .__logLevel { font-weight: 700; margin: 0 6px; }
+      .__logMsg   { color: #C9D1D9; }
+      .__logData  {
+        color: #8B949E;
+        margin: 2px 0 2px 120px;
+        font-size: 10px;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      #__errBadge {
+        position: fixed;
+        bottom: 12px; left: 120px;
+        background: #DA3633;
+        color: white;
+        border-radius: 10px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        z-index: 10000;
+        display: none;
+        font-family: monospace;
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Panel HTML
+    const panel = document.createElement('div');
+    panel.id = '__logPanel';
+    panel.innerHTML = `
+      <div id="__logToolbar">
+        <span>🪵 Debug Log — ${pageName}</span>
+        <button class="__toolBtn" id="__copyBtn" onclick="Logger.copy()">📋 העתק לוג</button>
+        <button class="__toolBtn" onclick="Logger.clear()">🗑 נקה</button>
+      </div>
+      <div id="__logEntries"></div>
+    `;
+    document.body.appendChild(panel);
+
+    // Toggle button
+    const toggle = document.createElement('button');
+    toggle.id = '__logToggle';
+    toggle.textContent = '🪵 LOG';
+    toggle.onclick = () => {
+      panel.classList.toggle('open');
+      errBadge.style.display = 'none';
+      errCount = 0;
+    };
+    document.body.appendChild(toggle);
+
+    // Error badge
+    const errBadge = document.createElement('div');
+    errBadge.id = '__errBadge';
+    document.body.appendChild(errBadge);
+
+    // Global error catcher
+    let errCount = 0;
+    window.addEventListener('error', e => {
+      add('ERROR', `${e.message}`, { file: e.filename, line: e.lineno, col: e.colno });
+      errCount++;
+      errBadge.textContent = `${errCount} שגיאה`;
+      errBadge.style.display = 'block';
+    });
+
+    window.addEventListener('unhandledrejection', e => {
+      add('ERROR', `Unhandled Promise: ${e.reason}`, {});
+      errCount++;
+      errBadge.textContent = `${errCount} שגיאה`;
+      errBadge.style.display = 'block';
+    });
+
+    renderLog();
+    add('INFO', `Logger initialized — ${pageName} — ${ts()}`);
+  }
+
+  return {
+    info:  (m, d) => add('INFO',  m, d),
+    ok:    (m, d) => add('OK',    m, d),
+    warn:  (m, d) => add('WARN',  m, d),
+    error: (m, d) => add('ERROR', m, d),
+    debug: (m, d) => add('DEBUG', m, d),
+    copy:  copyLog,
+    clear: clearLog,
+    init:  injectUI,
+  };
+})();
+
+
 const d = new Date(); d.setDate(d.getDate()+7);
 document.getElementById('deadline').value = d.toISOString().split('T')[0];
 
 // ── Init ─────────────────────────────────────────────────────────
 renderCategories();
+document.addEventListener('DOMContentLoaded', () => {
+  Logger.init('Admin — ממשק אחראית');
+  Logger.info('Admin page loaded', { url: window.location.href });
+});
 </script>
 </body>
 </html>
