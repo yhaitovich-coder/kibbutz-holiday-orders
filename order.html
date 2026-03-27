@@ -262,7 +262,7 @@ body {
 <!-- Hero -->
 <div class="hero">
   <div style="position:absolute;top:10px;left:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);font-family:monospace;">
-    v2.3 · 27.03.2026
+    v2.4 · 27.03.2026
   </div>
   <div class="hero-badge" id="heroBadge">הזמנת ארוחת חג</div>
   <h1 id="heroTitle">טוען...</h1>
@@ -529,22 +529,24 @@ async function submitOrder() {
   document.getElementById('spinner').classList.add('show');
 
   if (CFG.w) {
-    // שלח ל-Google Apps Script דרך GET (עוקף מגבלת CORS)
     try {
-      const encoded = encodeURIComponent(JSON.stringify(payload));
-      const url = `${CFG.w}?data=${encoded}`;
-      Logger.info('Sending to Google Apps Script via GET', { urlLen: url.length });
-      const res = await fetch(url);
-      const json = await res.json();
-      Logger.ok('Google Apps Script response', json);
-      if (json.status !== 'ok') throw new Error(json.message);
+      Logger.info('Sending to Google Apps Script via POST no-cors');
+      fetch(CFG.w, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      // no-cors לא מחזיר תשובה — נניח הצלחה אחרי 1.5 שניות
+      Logger.ok('POST sent (no-cors) — assuming success');
+      await new Promise(r => setTimeout(r, 1500));
     } catch(e) {
-      Logger.error('Google Apps Script failed', { err: String(e) });
+      Logger.error('POST failed', { err: String(e) });
       fallbackMailto(payload);
       return;
     }
   } else {
-    Logger.warn('No webhook configured — using mailto fallback');
+    Logger.warn('No webhook — using mailto fallback');
     fallbackMailto(payload);
     return;
   }
@@ -556,12 +558,13 @@ function fallbackMailto(payload) {
   Logger.warn('Using mailto fallback', { to: CFG.e });
   const lines = [
     `הזמנה — ${payload.holiday}`,
-    `שם: ${payload.name}  |  נפשות: ${payload.people}`,
+    `שם: ${payload.name}`,
     '──────────────',
     ...payload.items.map(i => `${i.category}: ${i.item} × ${i.qty}  (₪${i.lineTotal})`),
     '──────────────',
     `סה"כ: ₪${payload.total}`,
     `תשלום: ${payload.payment}${payload.accountNum ? ' — חשבון ' + payload.accountNum : ''}`,
+    payload.notes ? `הערות: ${payload.notes}` : '',
   ].filter(Boolean).join('\n');
 
   const mailto = `mailto:${CFG.e||''}?subject=${encodeURIComponent('הזמנת '+payload.holiday+' — '+payload.name)}&body=${encodeURIComponent(lines)}`;
