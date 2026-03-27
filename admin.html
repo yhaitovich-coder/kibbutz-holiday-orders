@@ -415,7 +415,7 @@ body {
   </div>
   <div style="display:flex;gap:8px;align-items:center;">
     <div style="background:rgba(217,119,6,0.25);border:1px solid rgba(217,119,6,0.5);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;color:#FDE68A;font-family:monospace;">
-    v2.2 · 27.03.2026
+    v2.3 · 27.03.2026
     </div>
     <div class="topbar-pill">צד אחראית 🔒</div>
   </div>
@@ -714,7 +714,9 @@ function generateLink() {
     }))
   };
 
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(config))));
+  // קידוד URL-safe base64
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(config))))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 
   // תמיד GitHub Pages — לא נתיב מקומי
   Logger.info('Generating link...', { holiday: config.h, cats: config.cats.length });

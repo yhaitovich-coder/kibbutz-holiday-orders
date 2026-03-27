@@ -262,7 +262,7 @@ body {
 <!-- Hero -->
 <div class="hero">
   <div style="position:absolute;top:10px;left:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);font-family:monospace;">
-    v2.2 · 27.03.2026
+    v2.3 · 27.03.2026
   </div>
   <div class="hero-badge" id="heroBadge">הזמנת ארוחת חג</div>
   <h1 id="heroTitle">טוען...</h1>
@@ -378,9 +378,14 @@ function loadConfig() {
     };
   } else {
     try {
-      const decoded = decodeURIComponent(atob(raw).split('').map(c =>
-        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-      ).join(''));
+      // תקן padding ותווים בעייתיים מ-URL encoding
+      const cleaned = raw.replace(/-/g, '+').replace(/_/g, '/');
+      const padded  = cleaned + '=='.slice(0, (4 - cleaned.length % 4) % 4);
+      const decoded = decodeURIComponent(
+        atob(padded).split('').map(c =>
+          '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join('')
+      );
       CFG = JSON.parse(decoded);
       Logger.ok('Config decoded successfully', { holiday: CFG.h, cats: CFG.cats ? CFG.cats.length : 0 });
     } catch(e) {
