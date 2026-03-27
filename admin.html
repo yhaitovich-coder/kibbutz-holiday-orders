@@ -415,7 +415,7 @@ body {
   </div>
   <div style="display:flex;gap:8px;align-items:center;">
     <div style="background:rgba(217,119,6,0.25);border:1px solid rgba(217,119,6,0.5);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;color:#FDE68A;font-family:monospace;">
-    v2.5 · 27.03.2026
+    v2.6 · 27.03.2026
     </div>
     <div class="topbar-pill">צד אחראית 🔒</div>
   </div>
@@ -548,7 +548,8 @@ body {
           <a id="linkAnchor" href="#" target="_blank"
              style="font-size:16px; font-weight:700; color:var(--blue); text-decoration:none; word-break:break-word; display:block; margin-bottom:4px;">
           </a>
-          <div style="font-size:11px; color:var(--muted); margin-top:6px;">לחץ על הלינק לבדיקה · העתק ושלח לחברים</div>
+          <div id="shortLinkStatus" style="font-size:12px; color:var(--muted); margin-top:6px;"></div>
+          <div style="font-size:11px; color:var(--muted); margin-top:4px;">לחץ על הלינק לבדיקה · העתק ושלח לחברים</div>
         </div>
       </div>
 
@@ -700,7 +701,9 @@ function buildSummary() {
 }
 
 // ── Generate link ────────────────────────────────────────────────
-function generateLink() {
+let shortLink = ''; // הלינק המקוצר
+
+async function generateLink() {
   const config = {
     h: document.getElementById('holidayName').value,
     d: document.getElementById('deadline').value,
@@ -718,24 +721,44 @@ function generateLink() {
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(config))))
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 
-  // תמיד GitHub Pages — לא נתיב מקומי
   Logger.info('Generating link...', { holiday: config.h, cats: config.cats.length });
   const base = 'https://yhaitovich-coder.github.io/kibbutz-holiday-orders/';
   generatedLink = `${base}order.html?cfg=${encoded}`;
-  Logger.ok('Link generated', { length: encoded.length, url: generatedLink.substring(0,80)+'...' });
+  Logger.ok('Link generated', { length: encoded.length });
 
-  // הצג כהיפרלינק עם שם החג
+  // הצג היפרלינק מיד
   const linkDisplay = document.getElementById('linkDisplay');
   const linkAnchor  = document.getElementById('linkAnchor');
+  const holidayName = config.h;
   linkAnchor.href        = generatedLink;
-  linkAnchor.textContent = `📩 הזמנה לארוחת ${config.h}`;
+  linkAnchor.textContent = `📩 הזמנה לארוחת ${holidayName}`;
   linkDisplay.style.display = 'block';
   document.getElementById('copyBtn').style.display = 'inline-flex';
   document.getElementById('shareSection').style.display = 'block';
+
+  // קצר את הלינק דרך TinyURL
+  shortLink = generatedLink; // ברירת מחדל אם קיצור נכשל
+  try {
+    document.getElementById('shortLinkStatus').textContent = '⏳ מקצר לינק...';
+    const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(generatedLink)}`);
+    const tiny = await res.text();
+    if (tiny.startsWith('https://')) {
+      shortLink = tiny.trim();
+      linkAnchor.href = shortLink;
+      document.getElementById('shortLinkStatus').textContent = `🔗 לינק קצר: ${shortLink}`;
+      Logger.ok('TinyURL created', { short: shortLink });
+    } else {
+      throw new Error('Invalid TinyURL response');
+    }
+  } catch(e) {
+    Logger.warn('TinyURL failed — using full link', { err: String(e) });
+    document.getElementById('shortLinkStatus').textContent = '⚠️ קיצור נכשל — משתמש בלינק המלא';
+  }
 }
 
 function copyLink() {
-  navigator.clipboard.writeText(generatedLink).then(() => {
+  const linkToCopy = shortLink || generatedLink;
+  navigator.clipboard.writeText(linkToCopy).then(() => {
     const s = document.getElementById('copySuccess');
     s.style.display = 'flex';
     setTimeout(() => s.style.display='none', 2500);
@@ -743,7 +766,9 @@ function copyLink() {
 }
 
 function shareWhatsapp() {
-  const msg = `הזמנות ${document.getElementById('holidayName').value} — לחצ/י כאן להזמנה:\n${generatedLink}`;
+  const holiday = document.getElementById('holidayName').value;
+  const link    = shortLink || generatedLink;
+  const msg     = `📩 הזמנה לארוחת ${holiday}\nלחצ/י על הלינק להזמנה:\n${link}`;
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
 }
 
